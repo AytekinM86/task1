@@ -1,0 +1,12 @@
+# Master changelog for the HOSPITAL model.
+# Lists the versioned changelogs in the order they must be applied.
+# Paths are relative to the search path root (/liquibase/changelog).
+databaseChangeLog:
+  - include:
+      file: hospital/v1__create_core_tables.yaml
+  - include:
+      file: hospital/v2__add_prescriptions.yaml
+  - include:
+      file: hospital/v3__seed_reference_data.yaml
+  - include:
+      file: hospital/v4__add_appointment_billing.yaml

@@ -1,0 +1,79 @@
+[tool.poetry]
+name = "hospital-datagen"
+version = "0.1.0"
+description = "Best-practices fake-data generator for the liquibase_hospital schema."
+authors = ["Ahad Mammadli <mammadliahad@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "hospital_datagen", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pydantic = "^2.7"
+pydantic-settings = "^2.3"
+faker = "^25.0"
+psycopg = { version = "^3.1", extras = ["binary"] }
+typer = "^0.12"
+# Typer 0.12 is incompatible with click >= 8.2 ("secondary flag" error).
+click = ">=8.1.7,<8.2"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.10"
+ruff = "^0.5"
+pytest = "^8.2"
+pytest-cov = "^5.0"
+
+[tool.poetry.scripts]
+hospital-datagen = "hospital_datagen.cli:app"
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
+
+# --------------------------------------------------------------------------- #
+# mypy — strict type checking
+# --------------------------------------------------------------------------- #
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+no_implicit_reexport = true
+plugins = ["pydantic.mypy"]
+files = ["src", "tests"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+module = ["faker.*"]
+ignore_missing_imports = true
+
+# --------------------------------------------------------------------------- #
+# ruff — linting + formatting
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "PTH", "RUF", "ANN", "TID", "PL"]
+ignore = ["ANN101", "ANN102"]  # deprecated: annotating self/cls
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "PLR2004", "S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# --------------------------------------------------------------------------- #
+# pytest
+# --------------------------------------------------------------------------- #
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --cov=hospital_datagen --cov-report=term-missing"
+testpaths = ["tests"]
+markers = ["integration: requires a live PostgreSQL database"]

@@ -1,0 +1,76 @@
+# Learning sandbox: PostgreSQL + Flyway + Liquibase.
+#
+# - `postgres` runs as a long-lived service (started by `make up`).
+# - `flyway` and `liquibase` live under the "tools" profile so they do NOT
+#   start with `docker compose up`. They are invoked one-shot per command via
+#   `docker compose run --rm <tool> <args>` (see the Makefile).
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: dbmig_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Init scripts only run when the data volume is empty (first boot / after `down -v`).
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - dbmig
+
+  flyway:
+    image: ${FLYWAY_IMAGE:-flyway/flyway:10-alpine}
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./flyway/sql:/flyway/sql:ro
+      - ./flyway/conf:/flyway/conf:ro
+    networks:
+      - dbmig
+
+  liquibase:
+    image: ${LIQUIBASE_IMAGE:-liquibase/liquibase:4.29}
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./liquibase/changelog:/liquibase/changelog:ro
+      - ./liquibase/conf:/liquibase/conf:ro
+    networks:
+      - dbmig
+
+  # Python fake-data generator. One-shot like flyway/liquibase (tools profile):
+  #   docker compose run --rm datagen seed --last-30-days
+  datagen:
+    build:
+      context: ./data-generator
+    image: dbmig-datagen:local
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATAGEN_DB_HOST: postgres
+      DATAGEN_DB_PORT: 5432
+      DATAGEN_DB_NAME: liquibase_hospital
+      DATAGEN_DB_USER: ${POSTGRES_USER:-postgres}
+      DATAGEN_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    networks:
+      - dbmig
+
+volumes:
+  pgdata:
+
+networks:
+  dbmig:

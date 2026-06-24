@@ -1,0 +1,48 @@
+# V2: incremental change — add prescriptions (lookup + junction).
+databaseChangeLog:
+  - changeSet:
+      id: hospital-2-medications
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: medications
+            columns:
+              - column: { name: medication_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: VARCHAR(120), constraints: { nullable: false, unique: true } }
+              - column: { name: form, type: VARCHAR(40) }
+              - column: { name: strength, type: VARCHAR(40) }
+
+  - changeSet:
+      id: hospital-2-prescriptions
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: prescriptions
+            columns:
+              - column: { name: prescription_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column:
+                  name: appointment_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_prescriptions_appointment, references: appointments(appointment_id) }
+              - column: { name: issued_at, type: TIMESTAMP, defaultValueComputed: now(), constraints: { nullable: false } }
+
+  - changeSet:
+      id: hospital-2-prescription-items
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: prescription_items
+            columns:
+              - column:
+                  name: prescription_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_items_prescription, references: prescriptions(prescription_id) }
+              - column:
+                  name: medication_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_items_medication, references: medications(medication_id) }
+              - column: { name: dosage, type: VARCHAR(80), constraints: { nullable: false } }
+        - addPrimaryKey:
+            tableName: prescription_items
+            columnNames: prescription_id, medication_id
+            constraintName: pk_prescription_items

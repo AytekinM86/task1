@@ -1,0 +1,19 @@
+# V2: incremental change — add payments against orders.
+databaseChangeLog:
+  - changeSet:
+      id: ecommerce-2-payments
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: payments
+            columns:
+              - column: { name: payment_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column:
+                  name: order_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_payments_order, references: orders(order_id) }
+              - column: { name: amount, type: "NUMERIC(10,2)", constraints: { nullable: false } }
+              - column: { name: method, type: VARCHAR(20), constraints: { nullable: false } }
+              - column: { name: paid_at, type: TIMESTAMP, defaultValueComputed: now(), constraints: { nullable: false } }
+        - sql:
+            sql: ALTER TABLE payments ADD CONSTRAINT chk_payments_method CHECK (method IN ('card','paypal','bank_transfer','cash_on_delivery'))

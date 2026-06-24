@@ -1,0 +1,82 @@
+# V1: core hospital tables (3NF).
+# Each changeSet is tracked individually in DATABASECHANGELOG by id+author.
+# createTable changes are automatically rollback-able (Liquibase generates DROP TABLE).
+databaseChangeLog:
+  - changeSet:
+      id: hospital-1-departments
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: departments
+            columns:
+              - column: { name: department_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: VARCHAR(100), constraints: { nullable: false, unique: true } }
+              - column: { name: location, type: VARCHAR(100) }
+
+  - changeSet:
+      id: hospital-1-specialties
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: specialties
+            columns:
+              - column: { name: specialty_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: VARCHAR(100), constraints: { nullable: false, unique: true } }
+
+  - changeSet:
+      id: hospital-1-doctors
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: doctors
+            columns:
+              - column: { name: doctor_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: first_name, type: VARCHAR(50), constraints: { nullable: false } }
+              - column: { name: last_name, type: VARCHAR(50), constraints: { nullable: false } }
+              - column:
+                  name: department_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_doctors_department, references: departments(department_id) }
+              - column:
+                  name: specialty_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_doctors_specialty, references: specialties(specialty_id) }
+
+  - changeSet:
+      id: hospital-1-patients
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: patients
+            columns:
+              - column: { name: patient_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: first_name, type: VARCHAR(50), constraints: { nullable: false } }
+              - column: { name: last_name, type: VARCHAR(50), constraints: { nullable: false } }
+              - column: { name: dob, type: DATE, constraints: { nullable: false } }
+              - column: { name: gender, type: CHAR(1) }
+              - column: { name: phone, type: VARCHAR(20) }
+              - column: { name: email, type: VARCHAR(120), constraints: { unique: true } }
+        - sql:
+            sql: ALTER TABLE patients ADD CONSTRAINT chk_patients_gender CHECK (gender IN ('M','F','O'))
+
+  - changeSet:
+      id: hospital-1-appointments
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: appointments
+            columns:
+              - column: { name: appointment_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column:
+                  name: patient_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_appointments_patient, references: patients(patient_id) }
+              - column:
+                  name: doctor_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_appointments_doctor, references: doctors(doctor_id) }
+              - column: { name: scheduled_at, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: status, type: VARCHAR(20), defaultValue: scheduled, constraints: { nullable: false } }
+              - column: { name: reason, type: VARCHAR(255) }
+        - sql:
+            sql: ALTER TABLE appointments ADD CONSTRAINT chk_appointments_status CHECK (status IN ('scheduled','completed','cancelled','no_show'))

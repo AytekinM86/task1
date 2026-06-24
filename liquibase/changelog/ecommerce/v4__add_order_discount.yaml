@@ -1,0 +1,18 @@
+# V4: dedicated ROLLBACK example.
+#
+# Raw `sql` changes have no auto-generated inverse, so the explicit `rollback:`
+# block is what lets `make lb-rollback` undo this change cleanly.
+#
+# Try it:
+#   make lb-update   MODEL=ecommerce          # adds orders.discount
+#   make lb-rollback MODEL=ecommerce COUNT=1  # runs the rollback block -> drops it
+databaseChangeLog:
+  - changeSet:
+      id: ecommerce-4-order-discount
+      author: data_engineer
+      changes:
+        - sql:
+            sql: ALTER TABLE orders ADD COLUMN discount NUMERIC(10,2) DEFAULT 0
+      rollback:
+        - sql:
+            sql: ALTER TABLE orders DROP COLUMN discount

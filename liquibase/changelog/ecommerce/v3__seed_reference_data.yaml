@@ -1,0 +1,61 @@
+# V3: seed sample data, plus a runOnChange view (Liquibase's R__ equivalent).
+databaseChangeLog:
+  - changeSet:
+      id: ecommerce-3-seed
+      author: data_engineer
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO customers (first_name, last_name, email) VALUES
+                ('Nina', 'Patel', 'nina.patel@example.com'),
+                ('Omar', 'Aliyev', 'omar.aliyev@example.com');
+              INSERT INTO addresses (customer_id, line1, city, postal_code, country) VALUES
+                (1, '12 Maple St', 'Boston', '02118', 'USA'),
+                (2, '5 Nizami Ave', 'Baku', 'AZ1000', 'Azerbaijan');
+              INSERT INTO categories (name, parent_category_id) VALUES
+                ('Electronics', NULL),
+                ('Laptops', 1),
+                ('Accessories', 1);
+              INSERT INTO products (category_id, sku, name, unit_price) VALUES
+                (2, 'LAP-001', '14" Ultrabook', 1299.00),
+                (3, 'ACC-001', 'USB-C Hub', 39.90),
+                (3, 'ACC-002', 'Wireless Mouse', 24.50);
+              INSERT INTO orders (customer_id, shipping_address_id, placed_at, status) VALUES
+                (1, 1, '2026-06-15 11:00', 'paid'),
+                (2, 2, '2026-06-18 16:45', 'pending');
+              INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES
+                (1, 1, 1, 1299.00),
+                (1, 2, 2, 39.90),
+                (2, 3, 1, 24.50);
+              INSERT INTO payments (order_id, amount, method, paid_at) VALUES
+                (1, 1378.80, 'card', '2026-06-15 11:05');
+      rollback:
+        - sql:
+            sql: |
+              DELETE FROM payments;
+              DELETE FROM order_items;
+              DELETE FROM orders;
+              DELETE FROM products;
+              DELETE FROM categories;
+              DELETE FROM addresses;
+              DELETE FROM customers;
+
+  - changeSet:
+      id: ecommerce-order-totals-view
+      author: data_engineer
+      runOnChange: true
+      changes:
+        - createView:
+            viewName: order_totals
+            replaceIfExists: true
+            selectQuery: |
+              SELECT o.order_id,
+                     c.first_name || ' ' || c.last_name AS customer_name,
+                     o.status,
+                     o.placed_at,
+                     SUM(oi.quantity * oi.unit_price) AS order_total
+              FROM orders o
+              JOIN customers c ON c.customer_id = o.customer_id
+              JOIN order_items oi ON oi.order_id = o.order_id
+              GROUP BY o.order_id, customer_name, o.status, o.placed_at
+              ORDER BY o.order_id

@@ -1,0 +1,10 @@
+# Master changelog for the E-COMMERCE model.
+databaseChangeLog:
+  - include:
+      file: ecommerce/v1__create_core_tables.yaml
+  - include:
+      file: ecommerce/v2__add_payments.yaml
+  - include:
+      file: ecommerce/v3__seed_reference_data.yaml
+  - include:
+      file: ecommerce/v4__add_order_discount.yaml
