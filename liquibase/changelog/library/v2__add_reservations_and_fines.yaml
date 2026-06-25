@@ -35,24 +35,16 @@ databaseChangeLog:
       id: library-2-fines
       author: data_engineer
       changes:
-        - createTable:
-            tableName: fines
-            columns:
-              - column: { name: fine_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
-              - column:
-                  name: loan_id
-                  type: INT
-                  constraints: { nullable: false, foreignKeyName: fk_fines_loan, references: loans(loan_id) }
-              - column: { name: amount, type: NUMERIC(8,2), constraints: { nullable: false } }
-              - column: { name: reason, type: VARCHAR(60), constraints: { nullable: false } }
-              - column: { name: issued_at, type: TIMESTAMP, defaultValueComputed: now(), constraints: { nullable: false } }
-              - column: { name: paid_at, type: TIMESTAMP }
         - sql:
             sql: |
-              ALTER TABLE fines ADD CONSTRAINT chk_fines_amount CHECK (amount > 0);
-              ALTER TABLE fines ADD CONSTRAINT chk_fines_reason CHECK (reason IN ('overdue','lost','damaged'));
-        - createIndex:
-            tableName: fines
-            indexName: idx_fines_loan
-            columns:
-              - column: { name: loan_id }
+              CREATE TABLE fines (
+                fine_id   SERIAL PRIMARY KEY,
+                loan_id   INT NOT NULL REFERENCES loans(loan_id),
+                amount    NUMERIC(8,2) NOT NULL CHECK (amount > 0),
+                reason    VARCHAR(60) NOT NULL CHECK (reason IN ('overdue','lost','damaged')),
+                issued_at TIMESTAMP NOT NULL DEFAULT now(),
+                paid_at   TIMESTAMP
+              );
+              CREATE INDEX idx_fines_loan ON fines(loan_id);
+        - rollback:
+            sql: DROP TABLE fines;
