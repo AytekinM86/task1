@@ -8,3 +8,5 @@ CREATE DATABASE flyway_hospital;
 CREATE DATABASE flyway_ecommerce;
 CREATE DATABASE liquibase_hospital;
 CREATE DATABASE liquibase_ecommerce;
+CREATE DATABASE flyway_library;
+CREATE DATABASE liquibase_library;

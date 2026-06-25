@@ -1,0 +1,136 @@
+databaseChangeLog:
+  - changeSet:
+      id: library-1-genres
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: genres
+            columns:
+              - column: { name: genre_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: VARCHAR(80), constraints: { nullable: false, unique: true } }
+              - column: { name: description, type: TEXT }
+
+  - changeSet:
+      id: library-1-authors
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: authors
+            columns:
+              - column: { name: author_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: first_name, type: VARCHAR(60), constraints: { nullable: false } }
+              - column: { name: last_name, type: VARCHAR(60), constraints: { nullable: false } }
+              - column: { name: birth_year, type: SMALLINT }
+              - column: { name: nationality, type: VARCHAR(60) }
+
+  - changeSet:
+      id: library-1-books
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: books
+            columns:
+              - column: { name: book_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: isbn, type: VARCHAR(20), constraints: { nullable: false, unique: true } }
+              - column: { name: title, type: VARCHAR(200), constraints: { nullable: false } }
+              - column:
+                  name: genre_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_books_genre, references: genres(genre_id) }
+              - column: { name: published_year, type: SMALLINT }
+              - column: { name: total_copies, type: SMALLINT, defaultValueNumeric: 1, constraints: { nullable: false } }
+              - column: { name: available_copies, type: SMALLINT, defaultValueNumeric: 1, constraints: { nullable: false } }
+              - column: { name: created_at, type: TIMESTAMP, defaultValueComputed: now(), constraints: { nullable: false } }
+        - sql:
+            sql: |
+              ALTER TABLE books ADD CONSTRAINT chk_books_total_copies CHECK (total_copies >= 1);
+              ALTER TABLE books ADD CONSTRAINT chk_books_available_copies CHECK (available_copies >= 0);
+        - createIndex:
+            tableName: books
+            indexName: idx_books_genre
+            columns:
+              - column: { name: genre_id }
+
+  - changeSet:
+      id: library-1-book-authors
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: book_authors
+            columns:
+              - column:
+                  name: book_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_book_authors_book, references: books(book_id) }
+              - column:
+                  name: author_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_book_authors_author, references: authors(author_id) }
+              - column: { name: role, type: VARCHAR(40), defaultValue: author, constraints: { nullable: false } }
+        - addPrimaryKey:
+            tableName: book_authors
+            columnNames: book_id, author_id
+            constraintName: pk_book_authors
+        - sql:
+            sql: ALTER TABLE book_authors ADD CONSTRAINT chk_book_authors_role CHECK (role IN ('author','co-author','editor','translator'))
+        - createIndex:
+            tableName: book_authors
+            indexName: idx_book_authors_book
+            columns:
+              - column: { name: book_id }
+        - createIndex:
+            tableName: book_authors
+            indexName: idx_book_authors_author
+            columns:
+              - column: { name: author_id }
+
+  - changeSet:
+      id: library-1-members
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: members
+            columns:
+              - column: { name: member_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: first_name, type: VARCHAR(60), constraints: { nullable: false } }
+              - column: { name: last_name, type: VARCHAR(60), constraints: { nullable: false } }
+              - column: { name: email, type: VARCHAR(120), constraints: { nullable: false, unique: true } }
+              - column: { name: phone, type: VARCHAR(20) }
+              - column: { name: membership_type, type: VARCHAR(20), defaultValue: standard, constraints: { nullable: false } }
+              - column: { name: joined_at, type: DATE, defaultValueComputed: CURRENT_DATE, constraints: { nullable: false } }
+              - column: { name: is_active, type: BOOLEAN, defaultValueBoolean: true, constraints: { nullable: false } }
+        - sql:
+            sql: ALTER TABLE members ADD CONSTRAINT chk_members_membership_type CHECK (membership_type IN ('standard','student','senior','premium'))
+
+  - changeSet:
+      id: library-1-loans
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: loans
+            columns:
+              - column: { name: loan_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column:
+                  name: book_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_loans_book, references: books(book_id) }
+              - column:
+                  name: member_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_loans_member, references: members(member_id) }
+              - column: { name: loaned_at, type: TIMESTAMP, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: due_at, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: returned_at, type: TIMESTAMP }
+              - column: { name: status, type: VARCHAR(20), defaultValue: active, constraints: { nullable: false } }
+        - sql:
+            sql: ALTER TABLE loans ADD CONSTRAINT chk_loans_status CHECK (status IN ('active','returned','overdue','lost'))
+        - createIndex:
+            tableName: loans
+            indexName: idx_loans_book
+            columns:
+              - column: { name: book_id }
+        - createIndex:
+            tableName: loans
+            indexName: idx_loans_member
+            columns:
+              - column: { name: member_id }

@@ -108,17 +108,21 @@ datagen-dry: ## Generate + validate against the live schema, then roll back
 # ----------------------------------------------------------------------------
 .PHONY: migrate-all clean-all demo
 
-migrate-all: ## Apply ALL migrations: Flyway + Liquibase, both models
+migrate-all: ## Apply ALL migrations: Flyway + Liquibase, all models
 	$(COMPOSE) run --rm flyway -configFiles=/flyway/conf/hospital.conf migrate
 	$(COMPOSE) run --rm flyway -configFiles=/flyway/conf/ecommerce.conf migrate
+	$(COMPOSE) run --rm flyway -configFiles=/flyway/conf/library.conf migrate
 	$(COMPOSE) run --rm liquibase --defaults-file=/liquibase/conf/hospital.properties update
 	$(COMPOSE) run --rm liquibase --defaults-file=/liquibase/conf/ecommerce.properties update
+	$(COMPOSE) run --rm liquibase --defaults-file=/liquibase/conf/library.properties update
 
 clean-all: ## Wipe all four schemas (Flyway clean + Liquibase drop-all)
 	$(COMPOSE) run --rm flyway -configFiles=/flyway/conf/hospital.conf -cleanDisabled=false clean
 	$(COMPOSE) run --rm flyway -configFiles=/flyway/conf/ecommerce.conf -cleanDisabled=false clean
+	$(COMPOSE) run --rm flyway -configFiles=/flyway/conf/library.conf -cleanDisabled=false clean
 	$(COMPOSE) run --rm liquibase --defaults-file=/liquibase/conf/hospital.properties drop-all
 	$(COMPOSE) run --rm liquibase --defaults-file=/liquibase/conf/ecommerce.properties drop-all
+	$(COMPOSE) run --rm liquibase --defaults-file=/liquibase/conf/library.properties drop-all
 
 demo: up migrate-all ## Full demo: start DB, run every migration, then show status
 	@echo "\n=== Flyway info (hospital) ==="

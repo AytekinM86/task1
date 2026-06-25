@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: library/v1__create_core_tables.yaml
+  - include:
+      file: library/v2__add_reservations_and_fines.yaml
+  - include:
+      file: library/v3__seed_reference_data.yaml

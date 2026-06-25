@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: library-2-reservations
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: reservations
+            columns:
+              - column: { name: reservation_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column:
+                  name: book_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_reservations_book, references: books(book_id) }
+              - column:
+                  name: member_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_reservations_member, references: members(member_id) }
+              - column: { name: reserved_at, type: TIMESTAMP, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: expires_at, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: status, type: VARCHAR(20), defaultValue: pending, constraints: { nullable: false } }
+        - sql:
+            sql: ALTER TABLE reservations ADD CONSTRAINT chk_reservations_status CHECK (status IN ('pending','fulfilled','cancelled','expired'))
+        - createIndex:
+            tableName: reservations
+            indexName: idx_reservations_book
+            columns:
+              - column: { name: book_id }
+        - createIndex:
+            tableName: reservations
+            indexName: idx_reservations_member
+            columns:
+              - column: { name: member_id }
+
+  - changeSet:
+      id: library-2-fines
+      author: data_engineer
+      changes:
+        - createTable:
+            tableName: fines
+            columns:
+              - column: { name: fine_id, type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column:
+                  name: loan_id
+                  type: INT
+                  constraints: { nullable: false, foreignKeyName: fk_fines_loan, references: loans(loan_id) }
+              - column: { name: amount, type: NUMERIC(8,2), constraints: { nullable: false } }
+              - column: { name: reason, type: VARCHAR(60), constraints: { nullable: false } }
+              - column: { name: issued_at, type: TIMESTAMP, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: paid_at, type: TIMESTAMP }
+        - sql:
+            sql: |
+              ALTER TABLE fines ADD CONSTRAINT chk_fines_amount CHECK (amount > 0);
+              ALTER TABLE fines ADD CONSTRAINT chk_fines_reason CHECK (reason IN ('overdue','lost','damaged'));
+        - createIndex:
+            tableName: fines
+            indexName: idx_fines_loan
+            columns:
+              - column: { name: loan_id }
